@@ -181,6 +181,7 @@ Saved best -> ./wsd_pipeline_out_tiny/reuters/best.pth
 [Epoch 1] loss=0.0000 val_acc=1.0 val_macro_f1=1.0
 Saved best -> ./wsd_pipeline_out_tiny/fiqa/best.pth
 ```
+![Alt Text](Screenshot from 2025-09-04 11-45-25.png)
 
 ---
 
