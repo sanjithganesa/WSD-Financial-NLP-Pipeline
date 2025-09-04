@@ -178,7 +178,8 @@ Saved best -> ./wsd_pipeline_out_tiny/reuters/best.pth
 [Epoch 1] loss=0.0000 val_acc=1.0 val_macro_f1=1.0
 Saved best -> ./wsd_pipeline_out_tiny/fiqa/best.pth
 ```
-![Alt Text](Screenshot from 2025-09-04 11-45-25.png)
+<img width="817" height="142" alt="Screenshot from 2025-09-04 11-45-25" src="https://github.com/user-attachments/assets/cbaf9fad-6f0a-4c97-8b27-ccf64bbb57d7" />
+
 
 ---
 
