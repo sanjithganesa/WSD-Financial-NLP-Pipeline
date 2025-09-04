@@ -1,5 +1,3 @@
----
-
 ```markdown
 # **NLP_CASE – Memory-Optimized Financial NLP Pipeline**
 
