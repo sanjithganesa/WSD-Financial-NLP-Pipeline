@@ -1,8 +1,8 @@
 # WSD Financial NLP Pipeline 
 
 **Project:** Memory-efficient NLP pipeline for financial text understanding and supervised learning using Tiny BERT-based encoder-decoder models.  
-**Author:** Sanjith Ganesa P  
-**Date:** 2025  
+**Author:** Sanjith Ganesa P , Rahul Verramacheneni , Venkata Karthik 
+ 
 
 ---
 
