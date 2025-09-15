@@ -1,83 +1,112 @@
-# **NLP_CASE – Memory-Optimized Financial NLP Pipeline**
+# WSD Financial NLP Pipeline (CPU-Optimized)
 
-This repository contains a **memory-optimized NLP pipeline** designed for training and fine-tuning transformer-based models on **financial datasets** using **≤4GB GPUs**.
-
-The pipeline performs the following tasks:
-- Supervised classification on the **Reuters dataset**
-- Masked Language Modeling (MLM) on the **Financial PhraseBank (FPB)**
-- Fine-tuning on the **FiQA financial QA dataset**
-- Optionally integrates **Financial Tweets** via KaggleHub
+**Project:** Memory-efficient NLP pipeline for financial text understanding and supervised learning using Tiny BERT-based encoder-decoder models.  
+**Author:** Sanjith Ganesa P  
+**Date:** 2025  
 
 ---
 
-## **📌 Features**
-- Uses **BERT-tiny** for efficiency on low-memory GPUs
-- Optimized for **≤4GB VRAM** using:
-  - Gradient checkpointing
-  - Mixed precision training (`torch.amp`)
-  - Expandable CUDA memory segments
-- Supports multi-dataset fine-tuning
-- Includes automatic model checkpoint saving
-- Supports **HF datasets** + **local dataset loading**
+## Table of Contents
+1. [Project Overview](#project-overview)  
+2. [Features](#features)  
+3. [Datasets](#datasets)  
+4. [Evaluation Metrics](#evaluation-metrics)  
+5. [Environment Setup](#environment-setup)  
+6. [Usage](#usage)  
+7. [Pipeline Implementation](#pipeline-implementation)  
+8. [License](#license)  
 
 ---
 
-## **📂 Project Structure**
-```
+## Project Overview
 
-NLP\_CASE/
-│── NLP\_CASE.py              # Main pipeline script
-│── README.md                # Documentation
-│── wsd\_pipeline\_out\_tiny/   # Auto-generated model checkpoints
-│── datasets/                # Local datasets
-│     ├── ReutersTranscribedSubset/
-│     ├── FinancialPhraseBank-v1.0/
-│     └── fiqa/
+This project implements a memory-optimized NLP pipeline for financial text analysis using **CPU-only training** (suitable for machines with ≤4GB GPU or CPU-only environments). The pipeline supports:
 
-````
+- Supervised classification on **Reuters** financial news.  
+- Masked Language Modeling (MLM) fine-tuning on **Financial PhraseBank (FPB)**.  
+- Supervised fine-tuning on **FiQA** financial sentiment dataset.  
+- Optional integration of financial tweets from Kaggle datasets.  
+
+The model architecture is a **Tiny BERT-based Encoder-Decoder** for word sense disambiguation and classification. The design ensures low memory usage while maintaining performance.
 
 ---
 
-## **📊 Datasets Used**
-| **Dataset**          | **Purpose**               | **Source** |
-|----------------------|---------------------------|------------|
-| Reuters             | Supervised classification | Local path |
-| Financial PhraseBank | MLM pretraining           | Local path |
-| FiQA                | Financial Q&A fine-tuning | HuggingFace |
-| Financial Tweets    | Sentiment analysis        | KaggleHub |
+## Features
+
+- CPU-only training with `torch.amp` support for mixed precision.  
+- Flexible dataset loading and cleaning: Reuters, FPB, FiQA, Kaggle tweets.  
+- Supervised training with **cross-entropy loss** and model checkpointing.  
+- Evaluation metrics specifically tailored for financial NLP:  
+  - **Directional Agreement (DA)**  
+  - **Event-Impact Correlation (EIC)**  
+  - **Financial Sense Consistency (FSC)**  
+  - **Profitability-Oriented Measure (Backtest Metric)**  
 
 ---
 
-## **⚡ Installation**
+## Datasets
 
-### **1. Clone the repository**
+1. **Reuters Subset** – Financial news labeled by category.  
+2. **Financial PhraseBank (FPB)** – Sentences annotated for sentiment.  
+3. **FiQA** – Financial question-answer dataset from HuggingFace.  
+4. **Financial Tweets** – Optional Kaggle dataset of finance-related tweets.
+
+> Data paths should be provided in the CLI arguments when running the script.
+
+---
+
+## Evaluation Metrics
+
+- **Directional Agreement (DA):** Measures alignment between predicted and true sentiment directions.  
+- **Event-Impact Correlation (EIC):** Correlation between events and model-predicted impacts (requires impact_scores).  
+- **Financial Sense Consistency (FSC):** Semantic consistency of financial statements post-prediction.  
+- **Profitability-Oriented Measure (Backtest):** Evaluates model predictions against actual financial returns (requires future_returns).  
+
+> Missing optional metrics will be skipped during evaluation.
+
+---
+
+## Environment Setup
+
+1. **Clone the repository**:
 ```bash
-git clone https://github.com/<your-username>/NLP_CASE.git
-cd NLP_CASE
+git clone https://github.com/your-username/wsd-financial-nlp.git
+cd wsd-financial-nlp
 ````
 
-### **2. Create a virtual environment**
+2. **Create virtual environment**:
 
 ```bash
 python3 -m venv venv
 source venv/bin/activate
 ```
 
-### **3. Install dependencies**
+3. **Install dependencies**:
 
 ```bash
-pip install torch torchvision torchaudio
-pip install transformers accelerate datasets tqdm scikit-learn pandas numpy kagglehub
+pip install -r requirements.txt
+```
+
+> Sample `requirements.txt` includes:
+
+```
+torch
+transformers
+datasets
+pandas
+numpy
+scikit-learn
+tqdm
+kagglehub
 ```
 
 ---
 
-## **🚀 Usage**
+## Usage
 
-### **Basic Command**
+**Run the pipeline:**
 
 ```bash
-export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True,max_split_size_mb:32
 python3 NLP_CASE.py \
     --do_mlm_on_fpb \
     --batch_size 1 \
@@ -88,107 +117,126 @@ python3 NLP_CASE.py \
     --tweets_epochs 1
 ```
 
----
+**CLI Arguments:**
 
-## **⚙ Command-Line Arguments**
+* `--reuters_path`: Path to Reuters subset.
+* `--fpb_path`: Path to Financial PhraseBank.
+* `--fiqa_hfpath`: Path/URL to FiQA dataset.
+* `--out_dir`: Directory for checkpoints and outputs.
+* `--batch_size`: Training batch size.
+* `--max_len`: Maximum token length.
+* `--reuters_epochs`: Epochs for Reuters supervised training.
+* `--fpb_mlm_epochs`: Epochs for FPB MLM fine-tuning.
+* `--fiqa_epochs`: Epochs for FiQA fine-tuning.
+* `--tweets_epochs`: Epochs for optional financial tweets fine-tuning.
+* `--do_mlm_on_fpb`: Flag to enable FPB MLM fine-tuning.
 
-| **Argument**       | **Type** | **Default**                                  | **Description**                   |
-| ------------------ | -------- | -------------------------------------------- | --------------------------------- |
-| `--reuters_path`   | str      | `./ReutersTranscribedSubset`                 | Reuters dataset path              |
-| `--fpb_path`       | str      | `./FinancialPhraseBank-v1.0`                 | Financial PhraseBank dataset path |
-| `--fiqa_hfpath`    | str      | `hf://datasets/llamafactory/fiqa/train.json` | FiQA dataset path                 |
-| `--out_dir`        | str      | `./wsd_pipeline_out_tiny`                    | Directory for checkpoints         |
-| `--batch_size`     | int      | `1`                                          | Batch size for training           |
-| `--max_len`        | int      | `64`                                         | Max sequence length               |
-| `--reuters_epochs` | int      | `1`                                          | Training epochs for Reuters       |
-| `--fpb_mlm_epochs` | int      | `1`                                          | MLM training epochs               |
-| `--fiqa_epochs`    | int      | `1`                                          | FiQA fine-tuning epochs           |
-| `--tweets_epochs`  | int      | `1`                                          | Financial tweets training         |
-| `--lr`             | float    | `2e-5`                                       | Learning rate                     |
-| `--do_mlm_on_fpb`  | flag     | `False`                                      | Enable FPB MLM pretraining        |
+> All computations are forced on CPU for memory efficiency.
 
 ---
 
-## **📦 Output**
+## Pipeline Implementation
 
-After training, the checkpoints are saved here:
+### 1. Text Cleaning
 
-```
-wsd_pipeline_out_tiny/
-├── reuters/
-│     └── best.pth
-├── fiqa/
-│     └── best.pth
-```
-
----
-
-## **🛠 Troubleshooting**
-
-### **1. MLM Trainer Accelerate Error**
-
-If you see:
-
-```
-Using the Trainer with PyTorch requires accelerate>=0.26.0
+```python
+def clean_text(s: str) -> str:
+    if s is None: return ""
+    s = re.sub(r"\s+", " ", s.replace("\n", " ").replace("\r", " ")).strip()
+    s = re.sub(r"http\S+", "", s)
+    s = re.sub(r"[^A-Za-z0-9\s\.\,\-\$%€£:;()\/]", " ", s)
+    s = re.sub(r"\s{2,}", " ", s)
+    return s.strip()
 ```
 
-Fix it by:
+### 2. Dataset Loaders
+
+* **Reuters** – Recursive TXT loading with labels from directory structure.
+* **FPB** – Load text sentences from `.txt` files.
+* **FiQA** – Robust HuggingFace loader with fallback to JSON.
+* **Financial Tweets** – Kagglehub loader (optional).
+
+### 3. Dataset Class
+
+```python
+class SupervisedTextDataset(Dataset):
+    def __init__(self, texts, labels, tokenizer, max_len=64):
+        self.texts, self.labels = texts, labels
+        self.tokenizer, self.max_len = tokenizer, max_len
+    def __len__(self): return len(self.texts)
+    def __getitem__(self, idx):
+        enc = self.tokenizer(str(self.texts[idx]), truncation=True,
+                             padding="max_length", max_length=self.max_len, return_tensors="pt")
+        return {
+            "input_ids": enc["input_ids"].squeeze(0),
+            "attention_mask": enc["attention_mask"].squeeze(0),
+            "labels": torch.tensor(self.labels[idx], dtype=torch.long)
+        }
+```
+
+### 4. Model Architecture
+
+* **Encoder:** Tiny BERT (`prajjwal1/bert-tiny`)
+* **WSD Projection:** Linear → GELU → LayerNorm → Dropout
+* **Decoder:** TransformerDecoder with learned query
+* **Classifier:** Linear head for label prediction
+
+```python
+class WSDEncoderDecoder(nn.Module):
+    def __init__(self, encoder_name="prajjwal1/bert-tiny", hidden_size=128, num_labels=2, nhead=4, dec_layers=1, dropout=0.1):
+        super().__init__()
+        self.encoder = AutoModel.from_pretrained(encoder_name)
+        self.encoder.gradient_checkpointing_enable()
+        enc_hidden = getattr(self.encoder.config, "hidden_size", 128)
+        self.wsd_proj = nn.Sequential(nn.Linear(enc_hidden, hidden_size), nn.GELU(),
+                                      nn.LayerNorm(hidden_size), nn.Dropout(dropout))
+        self.hidden = hidden_size
+        self.query = nn.Parameter(torch.randn(1, hidden_size))
+        decoder_layer = nn.TransformerDecoderLayer(d_model=hidden_size, nhead=nhead, dropout=dropout)
+        self.decoder = nn.TransformerDecoder(decoder_layer, num_layers=dec_layers)
+        self.classifier = nn.Linear(hidden_size, num_labels)
+
+    def forward(self, input_ids, attention_mask):
+        enc = self.encoder(input_ids=input_ids, attention_mask=attention_mask, return_dict=True)
+        memory = self.wsd_proj(enc.last_hidden_state)
+        B = input_ids.size(0)
+        tgt = self.query.unsqueeze(1).repeat(1, B, 1)
+        dec_out = self.decoder(tgt=tgt, memory=memory.permute(1,0,2))
+        return self.classifier(dec_out.squeeze(0))
+
+    def replace_classifier(self, num_labels):
+        self.classifier = nn.Linear(self.hidden, num_labels)
+```
+
+### 5. Training & Evaluation
+
+* CPU training using **AdamW optimizer**, **StepLR scheduler**, and **GradScaler**.
+* Evaluation outputs **accuracy**, **macro F1**, DA, EIC, FSC, and optional backtest metric.
+
+```python
+acc, f1 = evaluate(model, val_loader, device)
+print(f"[Epoch {epoch}] loss={avg_loss:.4f} val_acc={acc} val_f1={f1}")
+print(f"DA={da_score:.4f} EIC={eic_score} FSC={fsc_score}")
+```
+
+### 6. Full Pipeline Execution
 
 ```bash
-pip install --upgrade accelerate
-```
-
-### **2. KaggleHub Financial Tweets Warning**
-
-If you get:
-
-```
-expected str, bytes or os.PathLike object, not NoneType
-```
-
-This means the dataset wasn't downloaded.
-You can skip `--tweets_epochs` or manually download the dataset.
-
-### **3. CUDA Out of Memory**
-
-* Reduce `--batch_size`
-* Use `prajjwal1/bert-tiny` (already set as default)
-* Lower `--max_len`
-
----
-
-## **📌 Example Run**
-
-```bash
-python3 NLP_CASE.py \
-    --do_mlm_on_fpb \
-    --batch_size 1 \
-    --max_len 64 \
-    --reuters_epochs 3 \
-    --fpb_mlm_epochs 2 \
-    --fiqa_epochs 2
-```
-
-**Example Output:**
-
-```
-[Epoch 1] loss=1.7973 val_acc=0.16 val_macro_f1=0.0459
-Saved best -> ./wsd_pipeline_out_tiny/reuters/best.pth
-[Epoch 1] loss=0.0000 val_acc=1.0 val_macro_f1=1.0
-Saved best -> ./wsd_pipeline_out_tiny/fiqa/best.pth
-```
-<img width="817" height="142" alt="Screenshot from 2025-09-04 11-45-25" src="https://github.com/user-attachments/assets/cbaf9fad-6f0a-4c97-8b27-ccf64bbb57d7" />
-
-
----
-
-## **👤 Author**
-
-**Sanjith Ganesa P**
-📧 Email: [cb.en.u4cse22043@cb.students.amrita.edu](mailto:cb.en.u4cse22043@cb.students.amrita.edu)
-📍 Amrita Vishwa Vidyapeetham, Coimbatore
-
+python3 NLP_CASE.py --do_mlm_on_fpb --batch_size 1 --max_len 64 --reuters_epochs 1 --fpb_mlm_epochs 1 --fiqa_epochs 1 --tweets_epochs 1
 ```
 
 ---
+
+## Output
+
+* Model checkpoints saved in `./wsd_pipeline_out_tiny_cpu/`.
+* Evaluation metrics logged after each epoch.
+
+Example:
+
+```
+[Epoch 1] loss=1.9492 val_acc=0.2000 val_f1=0.1049
+DA=0.2400  EIC=N/A  FSC=0.9934
+Saved best -> ./wsd_pipeline_out_tiny_cpu/reuters/best.pth
+```
+
