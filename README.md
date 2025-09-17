@@ -185,6 +185,14 @@ Saved best -> ./wsd_pipeline_out_tiny_cpu/reuters/best.pth
 
 ---
 
-👉 Now the **README highlights embedding integration** clearly with a diagram and ambiguity coverage.
+## ⚖️ Comparison Table
 
-Do you also want me to add a **results visualization (charts for DA/FSC over epochs)** in the README?
+| Aspect                  | Previous Research (FinBERT, BERT) | Your Model |
+|-------------------------|----------------------------------|------------|
+| Encoder                 | Full-size BERT / FinBERT         | Tiny-BERT (memory efficient) |
+| Embedding Handling      | [CLS] token → classifier         | Projection head (reshaping) |
+| Decoder                 | ❌ Not used                      | ✅ TransformerDecoder with query |
+| Domain Adaptation       | FinBERT (finance-only)           | FinBERT + SBERT fusion |
+| Ambiguity Coverage      | Limited (polysemy only)          | Extended (7 ambiguity types) |
+| Evaluation              | Accuracy, F1                     | Financial metrics (DA, EIC, FSC, Backtest) |
+| Hardware Requirements   | GPU (≥12GB for FinBERT)          | CPU-only friendly |
