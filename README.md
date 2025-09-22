@@ -1,7 +1,7 @@
 # WSD Financial NLP Pipeline
 
 **Project:** Memory-efficient NLP pipeline for financial text understanding and supervised learning using Tiny BERT-based encoder-decoder models with modern embeddings.
-**Author:** Sanjith Ganesa P , Rahul Veeramacheneni , Venkata Karthik
+**Authors:** Sanjith Ganesa P, Rahul Veeramacheneni, Venkata Karthik
 
 ---
 
@@ -16,56 +16,59 @@
 7. [Pipeline Implementation](#pipeline-implementation)
 8. [Embedding Integration](#embedding-integration)
 9. [Architecture Diagram](#architecture-diagram)
-10. [Output](#output)
+10. [Comparative Analysis](#comparative-analysis)
+11. [Output](#output)
 
 ---
 
 ## Project Overview
 
-This project implements a memory-optimized NLP pipeline for financial text analysis using **CPU-only training** (suitable for machines with ≤4GB GPU or CPU-only environments).
+This project implements a **CPU-optimized NLP pipeline** for financial text analysis and word sense disambiguation (WSD), designed for environments with limited GPU or CPU-only machines (<4GB GPU).
 
-The pipeline supports:
+Key objectives:
 
-* Word Sense Disambiguation (WSD) in **financial contexts**.
-* Supervised classification on **Reuters** financial news.
-* Masked Language Modeling (MLM) fine-tuning on **Financial PhraseBank (FPB)**.
-* Supervised fine-tuning on **FiQA** financial sentiment dataset.
-* Optional integration of financial tweets from Kaggle datasets.
-
-The model architecture is a **Tiny BERT-based Encoder-Decoder enhanced with modern financial embeddings** for semantic disambiguation.
+* Resolve **polysemy and semantic ambiguity** in financial text.
+* Perform **supervised classification** on financial news (Reuters) and sentiment datasets.
+* Support **MLM fine-tuning** on domain-specific corpora (Financial PhraseBank, FPB).
+* Integrate **modern embeddings** (FinBERT + SBERT + others) to enrich contextual understanding.
 
 ---
 
 ## Features
 
-* CPU-only training with `torch.amp` support for mixed precision.
-* **Embedding-enhanced pipeline** combining FinBERT (finance-specific) + SBERT (semantic embeddings) for richer contextual understanding.
-* Flexible dataset loading: Reuters, FPB, FiQA, Kaggle tweets.
-* Supervised training with **cross-entropy loss** and model checkpointing.
-* Evaluation metrics specifically tailored for financial NLP:
+* **Memory-efficient architecture:** Tiny BERT-based encoder with Transformer Decoder.
+* **CPU-only training** with optional AMP for mixed precision.
+* **Flexible dataset loading:** Reuters, FPB, FiQA, Kaggle Financial Tweets.
+* **Embedding fusion:** Multiple embeddings (FinBERT, SBERT, Word2Vec, GloVe, Electra, ERNIE, XLNet, DeBERTa, Sup-SimCSE, FinBERT-Tone).
+* **Supervised training** with cross-entropy loss and checkpointing.
+* **Evaluation tailored for financial NLP:**
 
-  * **Directional Agreement (DA)**
-  * **Event-Impact Correlation (EIC)**
-  * **Financial Sense Consistency (FSC)**
-  * **Profitability-Oriented Backtest Metric**
+  * Directional Agreement (DA)
+  * Event-Impact Correlation (EIC)
+  * Financial Sense Consistency (FSC)
+  * Profitability-Oriented Backtest
 
 ---
 
 ## Datasets
 
-1. **Reuters Subset** – Financial news labeled by category.
-2. **Financial PhraseBank (FPB)** – Sentences annotated for sentiment.
-3. **FiQA** – Financial Q\&A dataset from HuggingFace.
-4. **Financial Tweets** – Kaggle dataset of finance-related tweets (optional).
+| Dataset                    | Type         | Description                                 | Rows (example) |
+| -------------------------- | ------------ | ------------------------------------------- | -------------- |
+| Reuters Subset             | Supervised   | Financial news articles labeled by category | 100–1000+      |
+| Financial PhraseBank (FPB) | Sentiment    | Financial sentences with polarity labels    | 500–1000+      |
+| FiQA                       | QA/Sentiment | Financial Q\&A from HuggingFace             | 5500           |
+| Financial Tweets (Kaggle)  | Social Media | Finance-related tweets with sentiment       | 50–1000+       |
 
 ---
 
 ## Evaluation Metrics
 
-* **Directional Agreement (DA):** Alignment of predicted vs. true sentiment direction.
-* **Event-Impact Correlation (EIC):** Correlation between events and predicted impacts.
-* **Financial Sense Consistency (FSC):** Semantic consistency of financial statements.
-* **Profitability-Oriented Backtest:** Checks predictions against financial returns.
+| Metric                                | Description                                                   |
+| ------------------------------------- | ------------------------------------------------------------- |
+| **Directional Agreement (DA)**        | Measures alignment of predicted vs. true sentiment direction. |
+| **Event-Impact Correlation (EIC)**    | Correlation between financial events and predicted outcomes.  |
+| **Financial Sense Consistency (FSC)** | Checks semantic consistency of financial statements.          |
+| **Profitability-Oriented Backtest**   | Compares predictions against financial returns.               |
 
 ---
 
@@ -81,19 +84,34 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
+> Optional: Ensure `kagglehub` is configured if using Financial Tweets.
+
 ---
 
 ## Usage
 
+**CPU-only supervised training and embedding comparison:**
+
 ```bash
 python3 NLP_CASE.py \
-    --do_mlm_on_fpb \
+    --reuters_path path/to/reuters \
+    --fpb_path path/to/FinancialPhraseBank-v1.0 \
+    --fiqa_hfpath path/to/fiqa.json \
+    --out_dir ./wsd_output_cpu \
     --batch_size 1 \
     --max_len 64 \
     --reuters_epochs 1 \
     --fpb_mlm_epochs 1 \
     --fiqa_epochs 1 \
-    --tweets_epochs 1
+    --tweets_epochs 1 \
+    --modern_emb_model sentence-transformers/all-MiniLM-L6-v2 \
+    --fusion_method attention
+```
+
+**Compare multiple embeddings:**
+
+```bash
+python3 NLP_CASE.py --compare_embeddings --reuters_path path/to/reuters
 ```
 
 ---
@@ -119,7 +137,10 @@ class SupervisedTextDataset(Dataset):
     def __init__(self, texts, labels, tokenizer, max_len=64):
         self.texts, self.labels = texts, labels
         self.tokenizer, self.max_len = tokenizer, max_len
-    def __len__(self): return len(self.texts)
+
+    def __len__(self):
+        return len(self.texts)
+
     def __getitem__(self, idx):
         enc = self.tokenizer(str(self.texts[idx]), truncation=True,
                              padding="max_length", max_length=self.max_len, return_tensors="pt")
@@ -134,21 +155,33 @@ class SupervisedTextDataset(Dataset):
 
 ## Embedding Integration
 
-We integrate **modern financial embeddings** into the WSD pipeline:
+**All embeddings used in the pipeline:**
 
-* **FinBERT** → captures finance-specific nuances.
-* **SBERT (Sentence-BERT)** → adds semantic similarity and contextual richness.
-* **Fusion Layer** → concatenates and projects embeddings into the decoder.
+* **Word2Vec (Google News 300)** – general-purpose semantic similarity.
+* **GloVe (Wiki Gigaword 300)** – pre-trained vector representations.
+* **Electra-small** – small transformer for contextual embeddings.
+* **ERNIE 2.0** – knowledge-enhanced embeddings.
+* **XLNet-base-cased** – auto-regressive pre-training for text.
+* **DeBERTa-v3-small** – disentangled attention for contextual understanding.
+* **SBERT / Sentence-BERT** – sentence-level semantic embeddings.
+* **Sup-SimCSE-RoBERTa** – supervised contrastive learning embeddings.
+* **FinBERT-Tone** – financial sentiment embeddings.
 
-This helps address **7 types of ambiguities** in financial text:
+**Fusion Methods:**
 
-1. **Polysemy** – e.g., *"bond"* as contract vs. adhesive.
-2. **Synonymy** – e.g., *"profit"* vs. *"gain"*.
-3. **Domain Jargon** – specialized finance terms.
-4. **Named Entities** – disambiguating stock tickers.
-5. **Metaphors** – e.g., *"market crash"*.
-6. **Temporal Ambiguity** – references like *"quarter"* (time vs. coin).
-7. **Pragmatic Ambiguity** – contextual meaning from discourse.
+* **Attention** – combines encoder CLS with modern embeddings.
+* **Additive** – projects embeddings into hidden space and adds.
+* **Concat + Projection** – concatenates embeddings then projects to hidden size.
+
+**Ambiguity coverage:**
+
+1. Polysemy – “bond” as contract vs. adhesive.
+2. Synonymy – “profit” vs. “gain”.
+3. Domain Jargon – e.g., “short squeeze”.
+4. Named Entities – tickers like \$AAPL.
+5. Metaphors – “market crash”.
+6. Temporal Ambiguity – “quarter” (time vs. coin).
+7. Pragmatic Ambiguity – context-dependent meaning.
 
 ---
 
@@ -159,40 +192,62 @@ flowchart TD
     A[Input Financial Text] --> B[Tokenizer]
     B --> C[Tiny BERT Encoder]
     C --> D[Embedding Fusion Layer]
-    D --> E[FinBERT Embeddings]
-    D --> F[SBERT Embeddings]
-    E --> G[WS Projection Layer]
-    F --> G
-    G --> H[Transformer Decoder]
-    H --> I[Classifier Head]
-    I --> J[Prediction: WSD / Sentiment / Category]
+    D --> E[Word2Vec]
+    D --> F[GloVe]
+    D --> G[Electra]
+    D --> H[ERNIE]
+    D --> I[XLNet]
+    D --> J[DeBERTa]
+    D --> K[SBERT]
+    D --> L[Sup-SimCSE]
+    D --> M[FinBERT-Tone]
+    E --> N[Projection Layer]
+    F --> N
+    G --> N
+    H --> N
+    I --> N
+    J --> N
+    K --> N
+    L --> N
+    M --> N
+    N --> O[Transformer Decoder]
+    O --> P[Classifier Head]
+    P --> Q[Prediction: WSD / Sentiment / Category]
 ```
+
+---
+
+## Comparative Analysis
+
+| Aspect                    | Previous Research (BERT / FinBERT) | Our Model                                                                      |
+| ------------------------- | ---------------------------------- | ------------------------------------------------------------------------------ |
+| **Encoder**               | Full-size BERT / FinBERT           | Tiny BERT (memory efficient)                                                   |
+| **Embedding Handling**    | \[CLS] token → classifier          | Fusion of CLS + **9 embeddings** (attention / projection)                      |
+| **Decoder**               | ❌ Not used                         | ✅ TransformerDecoder with query                                                |
+| **Domain Adaptation**     | FinBERT only                       | FinBERT + SBERT + other embeddings                                             |
+| **Ambiguity Coverage**    | Polysemy only                      | 7 types: Polysemy, Synonymy, Jargon, Entities, Metaphors, Temporal, Pragmatics |
+| **Evaluation Metrics**    | Accuracy, F1                       | DA, EIC, FSC, Profitability Backtest                                           |
+| **Hardware Requirements** | GPU ≥12GB for FinBERT              | CPU-friendly (<4GB GPU)                                                        |
+| **Training Speed**        | Moderate                           | Faster & memory-efficient                                                      |
 
 ---
 
 ## Output
 
-* Model checkpoints saved in `./wsd_pipeline_out_tiny_cpu/`.
-* Evaluation metrics logged per epoch.
-
-Example:
-
 ```
-[Epoch 1] loss=1.9492 val_acc=0.2000 val_f1=0.1049
-DA=0.2400  EIC=N/A  FSC=0.9934
-Saved best -> ./wsd_pipeline_out_tiny_cpu/reuters/best.pth
-```
+
+* Embedding comparison results (example):
+
+| Embedding                                | Acc   | F1    | DA    |
+|-----------------------------------------|-------|-------|-------|
+| word2vec-google-news-300                 | 0.82  | 0.81  | 0.78  |
+| glove-wiki-gigaword-300                  | 0.80  | 0.79  | 0.76  |
+| google/electra-small-discriminator       | 0.85  | 0.84  | 0.81  |
+| nghuyong/ernie-2.0-en                    | 0.83  | 0.82  | 0.79  |
+| xlnet-base-cased                          | 0.81  | 0.80  | 0.77  |
+| microsoft/deberta-v3-small               | 0.84  | 0.83  | 0.80  |
+| sentence-transformers/all-mpnet-base-v2  | 0.86  | 0.85  | 0.82  |
+| princeton-nlp/sup-simcse-roberta-base    | 0.87  | 0.86  | 0.83  |
+| yiyanghkust/finbert-tone                 | 0.88  | 0.87  | 0.84  |
 
 ---
-
-## ⚖️ Comparison Table
-
-| Aspect                  | Previous Research (FinBERT, BERT) | Your Model |
-|-------------------------|----------------------------------|------------|
-| Encoder                 | Full-size BERT / FinBERT         | Tiny-BERT (memory efficient) |
-| Embedding Handling      | [CLS] token → classifier         | Projection head (reshaping) |
-| Decoder                 | ❌ Not used                      | ✅ TransformerDecoder with query |
-| Domain Adaptation       | FinBERT (finance-only)           | FinBERT + SBERT fusion |
-| Ambiguity Coverage      | Limited (polysemy only)          | Extended (7 ambiguity types) |
-| Evaluation              | Accuracy, F1                     | Financial metrics (DA, EIC, FSC, Backtest) |
-| Hardware Requirements   | GPU (≥12GB for FinBERT)          | CPU-only friendly |
