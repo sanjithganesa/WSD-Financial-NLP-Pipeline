@@ -1,5 +1,3 @@
----
-
 # WSD Financial NLP Pipeline
 
 **Project:** Memory-efficient NLP pipeline for financial text understanding and supervised learning using Tiny BERT-based encoder-decoder models with modern embeddings.
